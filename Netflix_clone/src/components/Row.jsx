@@ -4,11 +4,17 @@ import axios from 'axios'
 // import Movies from './Movies.jsx' 
 import {FaHeart, FaRegHeart} from 'react-icons/fa' // Heart Icons
 import {MdChevronLeft,MdChevronRight} from 'react-icons/md'
+import {UserAuth} from '../context/AuthContext'
+import {db} from '../firebase'
+import { arrayUnion,doc,updateDoc } from 'firebase/firestore'
+
 
 const Row = ({title,fetchURL,RowId}) => {
 
     const [movie,setMovies] = useState([])
     const [like,setLikes] = useState(false) 
+
+    const [saved,setSaved] = useState(false)
 
     useEffect(()=>{
         axios.get(fetchURL).then((res)=> {
@@ -23,6 +29,30 @@ const Row = ({title,fetchURL,RowId}) => {
 
 // # slide movies 
 const  movies = movie.map((item,id)=>{
+
+    // const [like,setLike] = useState(false)
+    // const [saved,setSaved] = useState(false)
+    const {user} = UserAuth()
+    const movieID = doc(db,'users',`${user?.email}`)
+
+    const saveShow = async ()=>{
+        if(user?.email){
+            setLikes(!like)
+            setSaved(true)
+            await updateDoc(movieID,{
+                savedShows : arrayUnion({
+                    id : item.id,
+                    title : item.title,
+                    img : item.backdrop_path
+                })
+            })
+            alert('movie saved')
+        }else{
+            alert('please log in to save a movie')
+        }
+    }
+
+
         // {console.log(item?.title)}
    return <div key={id} className='w-[160px] sm:w-[200px] md:w-[240px] lg:w-[280px] inline-block  cursor-pointer relative p-2'>
             <img src={`https://image.tmdb.org/t/p/original/${item?.backdrop_path}`} alt={item.title} />
@@ -30,7 +60,7 @@ const  movies = movie.map((item,id)=>{
                 <p className='white-space-normal text-xs md:text-sm font-bold flex justify-center items-center h-full text-center'>
                     {item?.title}
                 </p>
-                <p>
+                <p onClick={saveShow}>
                     {like ? <FaHeart className='absolute top-4 left-4 text-gray-300'/> : <FaRegHeart className='absolute top-4 left-4 text-gray-300'/>}
                 </p>
             </div>
